@@ -1,4 +1,10 @@
-# PlayGround
+# PlayGround — 🏎️ Proto Lane
+
+<p align="center">
+  <img src="racecar.svg" alt="Proto Lane race car" width="140" />
+</p>
+
+**Proto Lane** is a 3-lane race-car dodger for phone/tablet: hold to steer (press-drag the road, or hold ◀ ▶ / ← →), dodge traffic, grab coins, and survive the speed ramp. Open `index.html` (or press PLAY) to drive.
 
 <!-- omgithub:readme:start -->
 ## 🚀 Build, play, and remix with OMGithub
