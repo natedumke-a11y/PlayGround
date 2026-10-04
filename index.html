@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#060a14">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23060a14'/%3E%3Cpath d='M6 22 16 6l10 16' stroke='%2338f0ff' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3Ccircle cx='16' cy='22' r='3' fill='%23ff3df0'/%3E%3C/svg%3E">
-<title>Proto Lane — Neon Lane FPS</title>
+<title>Proto-Shoot — Neon Lane FPS</title>
 <style>
   :root{
     --neon:#38f0ff; --neon2:#ff3df0; --amber:#ffc247; --good:#3dff8a; --bad:#ff4d5e;
@@ -23,8 +23,9 @@
   .pill .v{font-size:18px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.1}
   #hpwrap{height:8px;background:rgba(255,255,255,.14);border-radius:99px;margin-top:6px;overflow:hidden}
   #hpbar{height:100%;width:100%;background:linear-gradient(90deg,var(--good),var(--amber));border-radius:99px;transition:width .2s}
-  #armorwrap{height:8px;background:rgba(255,255,255,.14);border-radius:99px;margin-top:4px;overflow:hidden;border:1px solid rgba(56,240,255,.35)}
-  #armorbar{height:100%;width:0%;background:linear-gradient(90deg,#38f0ff,#7aa8ff);border-radius:99px;transition:width .2s;box-shadow:0 0 8px #38f0ff}
+  #armorwrap{height:10px;display:flex;gap:2px;margin-top:4px}
+  #armorwrap .apill{flex:1;background:rgba(255,255,255,.13);border-radius:99px;transition:background .15s}
+  #armorwrap .apill.on{background:linear-gradient(180deg,#9ff3ff,#2aa8ff);box-shadow:0 0 7px rgba(56,240,255,.85)}
   .armorlabel{font-size:10px;letter-spacing:.14em;opacity:.85;margin-top:4px;color:#9ff3ff}
   #ammowrap{text-align:right}
   #ammo{font-size:22px;font-weight:900}
@@ -99,7 +100,7 @@
 
 <div class="hud" id="hud">
   <div class="topbar">
-    <div class="pill" style="flex:1.2"><div class="k">SCORE / BEST</div><div class="v"><span id="score">0</span> <span style="opacity:.55;font-size:12px">/ <span id="best">0</span></span></div><div id="hpwrap"><div id="hpbar"></div></div><div class="armorlabel">🛡 ARMOR</div><div id="armorwrap"><div id="armorbar"></div></div></div>
+    <div class="pill" style="flex:1.2"><div class="k">SCORE / BEST</div><div class="v"><span id="score">0</span> <span style="opacity:.55;font-size:12px">/ <span id="best">0</span></span></div><div id="hpwrap"><div id="hpbar"></div></div><div class="armorlabel">🛡 ARMOR</div><div id="armorwrap"></div></div>
     <div class="pill" style="flex:.9;text-align:center"><div class="k">WAVE</div><div class="v" id="wave">1/5</div><div class="k" id="foes" style="margin-top:4px">FOES 0</div></div>
     <div class="pill" id="ammowrap" style="flex:.9"><div class="k">AMMO</div><div id="ammo">30</div><div class="k" id="reloadState">READY</div></div>
   </div>
@@ -132,7 +133,7 @@
 
 <div class="screen" id="menu">
   <div class="card">
-    <h1>PROTO LANE</h1>
+    <h1>PROTO-SHOOT</h1>
     <div class="sub">NEON LANE FPS • PHONE / TABLET</div>
     <div class="desc">
       <b>Hold the lane.</b> You auto-advance down a neon combat corridor. Hostile drones, troopers and heavies warp in ahead — <i>switch lanes to dodge</i>, drag to aim, hold <i>FIRE</i> to shoot.<br><br>
@@ -182,8 +183,8 @@ const $=id=>document.getElementById(id);
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const lerp=(a,b,t)=>a+(b-a)*t;
 const rand=(a,b)=>a+Math.random()*(b-a);
-const store={get best(){try{return +localStorage.getItem('protolane.best')||0}catch{return 0}},set best(v){try{localStorage.setItem('protolane.best',v)}catch{}},
-get invertY(){try{return localStorage.getItem('protolane.invertY')==='1'}catch{return false}},set invertY(v){try{localStorage.setItem('protolane.invertY',v?'1':'0')}catch{}}};
+const store={get best(){try{return +localStorage.getItem('protoshoot.best')||+localStorage.getItem('protolane.best')||0}catch{return 0}},set best(v){try{localStorage.setItem('protoshoot.best',v)}catch{}},
+get invertY(){try{return localStorage.getItem('protoshoot.invertY')==='1'||localStorage.getItem('protolane.invertY')==='1'}catch{return false}},set invertY(v){try{localStorage.setItem('protoshoot.invertY',v?'1':'0')}catch{}}};
 
 /* ============ audio (procedural, no assets) ============ */
 const AudioSys={ctx:null,muted:false,
@@ -207,7 +208,7 @@ let renderer;
 try{
   renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
 }catch(e){
-  document.body.insertAdjacentHTML('beforeend','<div id="glfail"><div><h2>WebGL unavailable</h2><p>Proto Lane needs WebGL. Try Chrome / Safari with hardware acceleration on.</p></div></div>');
+  document.body.insertAdjacentHTML('beforeend','<div id="glfail"><div><h2>WebGL unavailable</h2><p>Proto-Shoot needs WebGL. Try Chrome / Safari with hardware acceleration on.</p></div></div>');
   throw e;
 }
 renderer.setSize(innerWidth,innerHeight);
@@ -440,6 +441,8 @@ const TOTAL_WAVES=5;
 const state={mode:'menu',lane:1,laneX:0,yaw:0,pitch:0,hp:100,ammo:30,mag:30,reloading:false,reloadT:0,score:0,wave:1,foesLeft:0,spawnQueue:[],spawnT:0,betweenT:0,shots:0,hits:0,time:0,fireHeld:false,fireCd:0,shieldT:0,dashCd:0,high:true,shake:0,attract:0,armor:0,invertY:store.invertY};
 $('best').textContent=store.best;$('menuBest').textContent=store.best;
 let best=store.best;
+const armorPills=[];{const w=$('armorwrap');for(let i=0;i<10;i++){const d=document.createElement('div');d.className='apill';w.appendChild(d);armorPills.push(d);}}
+function syncArmorBar(){const n=Math.ceil(state.armor/10);armorPills.forEach((b,i)=>b.classList.toggle('on',i<n));}
 
 function toast(msg,color){const d=document.createElement('div');d.className='toast';d.textContent=msg;if(color)d.style.borderColor=color;$('toasts').prepend(d);while($('toasts').children.length>4)$('toasts').lastChild.remove();setTimeout(()=>d.remove(),2600);}
 function banner(t,s){$('bannerTitle').textContent=t;$('bannerSub').textContent=s;$('banner').classList.add('show');clearTimeout(banner._t);banner._t=setTimeout(()=>$('banner').classList.remove('show'),2200);}
@@ -470,7 +473,7 @@ function startGame(){
   for(const b of barriers){b.active=false;b.m.visible=false}
   for(const p of pickups)p.m.visible=false;
   for(const s of foeShots){s.m.visible=false;s.t=0}
-  $('hpbar').style.width='100%';$('armorbar').style.width='0%';hideAll();$('hud').style.opacity=1;
+  $('hpbar').style.width='100%';syncArmorBar();hideAll();$('hud').style.opacity=1;
   buildWave(1);
 }
 function hideAll(){for(const id of ['menu','pause','over','win'])$(id).classList.add('hidden')}
@@ -642,7 +645,7 @@ function update(dt){
   if(state.fireHeld&&state.mode==='play'){state.fireCd-=dt;if(state.fireCd<=0)shoot();}
   if(state.reloading){state.reloadT-=dt;$('reloadState').textContent=`RELOADING ${state.reloadT.toFixed(1)}`;if(state.reloadT<=0)finishReload();}
   $('hpbar').style.width=state.hp+'%';
-  $('armorbar').style.width=state.armor+'%';
+  syncArmorBar();
   /* spans */
   if(state.mode==='play'){
     if(state.betweenT>0){state.betweenT-=dt;if(state.betweenT<=0){state.wave++;buildWave(state.wave);}}
@@ -733,7 +736,7 @@ function loop(){
   update(dt);
   renderer.render(scene,camera);
   frames++;
-  if(!window.__PROTOLANE&&frames>5)window.__PROTOLANE={ready:true,frames,
+  if(!window.__PROTOSHOOT&&frames>5)window.__PROTOSHOOT=window.__PROTOLANE={ready:true,frames,
     get yaw(){return state.yaw},get pitch(){return state.pitch},get invertY(){return state.invertY},get armor(){return state.armor},get hp(){return state.hp}};
   /* fps meter */
   fpsAcc+=dt;fpsN++;fpsT+=dt;
